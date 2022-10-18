@@ -1,21 +1,26 @@
 var ws_uri = "ws://10.0.0.1:9600";
 var websocket = new WebSocket(ws_uri);
+var currentChat = 0;
+const scrollBox = document.getElementById("scroller");
+const maxChat = 30;
+
+MessageAdd('Welcome friends. Be sure your encryption keys match.', scrollBox, "#dbdbce", "center");
 
 websocket.onopen = function (event) {
     //When web socket is opened we display a message to the user.
-    MessageAdd('<dive class="message green">You have entered the chat room.</div>');
+    MessageAdd('You have entered the chat room.', scrollBox, "#ffffff", "center");
 
 };
 
 websocket.onclose = function (event) {
     //When the socket is closed tell the user that they have been disconnected
-    MessageAdd('<div class="message blue">You have been disconnected.</div>');
+    MessageAdd('You have been disconnected.', scrollBox, "#ffffff", "center");
 
 };
 
 websocket.onerror = function (event) {
     //When an error occurs display the message in the chat and write an error to the console. 
-    MessageAdd('<div class="message red">WebSocket error, see console.</div>');
+    MessageAdd('WebSocket error, see console.', scrollBox, "#ffffff", "center");
     console.error("WebSocket error observed:", event);
 
 };
@@ -25,7 +30,7 @@ websocket.onmessage = function (event) {
     var data = JSON.parse(event.data);
 
     if (data.type == "message") {
-        MessageAdd('<div class="message">' + data.username + ': ' + data.message + '</div>');
+        MessageAdd(data.username, scrollBox, "#ffffff", "right");
     }
 };
 
@@ -33,8 +38,9 @@ document.getElementById("chat-form").addEventListener("submit", function(event) 
     //On form submit
     event.preventDefault();
 
-    var message_element = document.getElementsByTagName("input")[0];
-    var message = message_element.value;
+    var message_element = document.getElementsByTagName("input")[0]; //get element in the form
+    var message = message_element.value; //get the value out of the element
+    MessageAdd(message, scrollBox) //add the value to our side of the chat
 
     if (message.toString().length) {
         var data = {
@@ -49,7 +55,7 @@ document.getElementById("chat-form").addEventListener("submit", function(event) 
     }
 }, false);
 
-function MessageAdd(message) {
+function MessageAss(message) {
     //Function to add our message to the chat
     var chat_messages = document.getElementById("chat-messages");
 
@@ -58,20 +64,20 @@ function MessageAdd(message) {
     chat_messages.scrollHeight = chat_messages.scrollHeight;
 }
 
-function MessageAdd0(x, textColor = "#ffffff") {
+function MessageAdd(TextIn, ParentElement, textColor = "#dbdbce", alignment = "left") {
     //add a text element to the scroll boxi!
     currentChat++;
-    let currentDate = new Date();
-    let time = currentDate.getHours() + ":" + currentDate.getMinutes() + ":" + currentDate.getSeconds();
 
     var newElement = document.createElement('div');
-    newElement.setAttribute('id', "message" + currentChat);
+    newElement.setAttribute('id', "message" + currentChat); //set id for housekeeping
     newElement.setAttribute('style', "color:" + textColor);
-    newElement.innerHTML = "[" + time + "]: " + x;
-    scroller.prepend(newElement);
+    newElement.style.textAlign = alignment;
+    newElement.innerHTML = TextIn;
 
-    if (currentChat > 10) {
-        var z = "message" + (currentChat - 10);
+    ParentElement.append(newElement);
+
+    if (currentChat > maxChat) { //delete chats if there are too many at once
+        var z = "message" + (currentChat - maxChat);
         document.getElementById(z).remove();
     }
 }
