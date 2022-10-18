@@ -3,6 +3,12 @@ var websocket = new WebSocket(ws_uri);
 var currentChat = 0;
 const scrollBox = document.getElementById("scroller");
 const maxChat = 30;
+const CryptoJS = require('crypto-js');
+
+
+//  CHANGE THIS FOR FINAL THIS IS THE ENCRYPTION KEY
+const key = '123abc';
+//
 
 MessageAdd('Welcome friends. Be sure your encryption keys match.', scrollBox, "#dbdbce", "center");
 
@@ -27,10 +33,11 @@ websocket.onerror = function (event) {
 
 websocket.onmessage = function (event) {
     //When recieving a message parse the data then
-    var data = JSON.parse(event.data);
+    var data = JSON.parse(event.data); //store encrypted gibberish into a variable called "data"
 
     if (data.type == "message") {
-        MessageAdd(data.username, scrollBox, "#ffffff", "right");
+        let solvedMessage = decryptString(data.username);
+        MessageAdd(solvedMessage, scrollBox, "#ffffff", "right");
     }
 };
 
@@ -49,7 +56,9 @@ document.getElementById("chat-form").addEventListener("submit", function(event) 
             message: message
         };
 
-        websocket.send(JSON.stringify(data));
+        var messageData = encryptString(JSON.stringify(data));
+
+        websocket.send(messageData);
 
         message_element.value = "";
     }
@@ -80,4 +89,14 @@ function MessageAdd(TextIn, ParentElement, textColor = "#dbdbce", alignment = "l
         var z = "message" + (currentChat - maxChat);
         document.getElementById(z).remove();
     }
+}
+
+function decryptString(text, key) {
+    const bytes = CryptoJS.AES.decrypt(text, key);
+    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+    return originalText;
+}
+
+function encryptString(text, key) {
+    return CryptoJS.AES.encrypt(text, key).toString;
 }
