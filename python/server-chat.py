@@ -43,28 +43,27 @@ while True:
                 print("====================")
                 print("Recieved data: " + strData)
                 print("====================")
-                if strData.startswith("#"):
-                    users[data[1:].lower()]=connect
-
-                    print("User " + strData[1:] + " added.")
-
-                    print("Connection Data: " + str(connect))
-                    print("Users: " + str(users))
-
-                    sendName = bytes("\nYour user detail saved as : " + strData[1:], 'utf-8') #get that username and convert it to bytes for sending back
-
-                    connect.sendall(sendName)
-                    print("Connection response complete.")
-
-                if strData.startswith("@"):
-                    print("Recieved incoming message successfully")
-                    for i in range(len(socket_list)):
-                        if i != 0: #exclude the server itself
-                            print("Sending to socket: " + str(i) + " : " + str(socket_list[i]))
-                            try:
-                                socket_list[i].sendall(data[1:]) #This needs a way to time out
-                            except:
-                                continue
+                #if strData.startswith("#"):
+                #    users[data[1:].lower()]=connect
+                #
+                #    print("User " + strData[1:] + " added.")
+                #
+                #    print("Connection Data: " + str(connect))
+                #    print("Users: " + str(users))
+                #
+                #    sendName = bytes("\nYour user detail saved as : " + strData[1:], 'utf-8') #get that username and convert it to bytes for sending back
+                #
+                #    connect.sendall(sendName)
+                #    print("Connection response complete.")
+                #
+                #if strData.startswith("@"):
+                for i in range(len(socket_list)):
+                    if i != 0: #exclude the server itself
+                        print("Sending to socket: " + str(i) + " : " + str(socket_list[i]))
+                        try:
+                            socket_list[i].sendall(data[1:]) #This needs a way to time out
+                        except:
+                            continue
             except:
                 continue
 
