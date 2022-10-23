@@ -1,9 +1,11 @@
+
 var ws_uri = "ws://10.0.0.1:9600";
 var websocket = new WebSocket(ws_uri);
 var currentChat = 0;
 const scrollBox = document.getElementById("scroller");
 const maxChat = 30;
-const CryptoJS = require('crypto-js');
+//const CryptoJS = require('crypto-js');
+
 
 
 //  CHANGE THIS FOR FINAL THIS IS THE ENCRYPTION KEY
@@ -57,6 +59,8 @@ document.getElementById("chat-form").addEventListener("submit", function(event) 
         };
 
         var messageData = encryptString(JSON.stringify(data));
+
+        console.log(messageData);
 
         websocket.send(messageData);
 
