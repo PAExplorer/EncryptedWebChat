@@ -205,7 +205,7 @@ def primarySend(send_msg, key):
 
     send_msg = paCrypto.encryptString(send_msg, key)
     try:
-        client_socket.sendall(send_msg)
+        client_socket.sendall(bytes(send_msg, 'utf-8'))
     except socket.error:
         app.addToChatWindow("System: Connection Error")
 
