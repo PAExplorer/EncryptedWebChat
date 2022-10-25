@@ -260,3 +260,5 @@ if __name__ == "__main__":
 #Limit size of message, the encrtion crashes the client 
 # when you try to send messages larger than 600 characters, 
 # 200 characters should be plenty for most cases
+#
+#Add a screen for sending credentials to the server
