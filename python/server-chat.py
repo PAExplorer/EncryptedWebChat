@@ -61,10 +61,14 @@ while True:
                     if i != 0: #exclude the server itself
                         print("Sending to socket: " + str(i) + " : " + str(socket_list[i]))
                         try:
-                            socket_list[i].sendall(data[1:]) #This needs a way to time out
+                            socket_list[i].sendall(data) #This needs a way to time out
                         except:
                             continue
             except:
                 continue
 
 server_socket.close()
+
+#TO-DO:
+#add cleanup to unused ports
+#add authentication to connect to the server

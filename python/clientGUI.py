@@ -13,7 +13,7 @@ timeout_time = 10 #timeout in seconds
 backgroundColor = '#2e2e2e'
 foregroundColor = '#dbdbce'
 serverIp = '127.0.0.1'
-encKey = '123abc'
+passKey = '123abc'
 quitFlag = True
 
 class settingsWin(tk.Toplevel):
@@ -34,6 +34,7 @@ class settingsWin(tk.Toplevel):
         self.nameEntry = tk.Entry(self)
         self.nameEntry.pack(expand=True)
         self.nameEntry.insert(0, loadSettings(0))
+
         self.ipLabel = ttk.Label(
             self,
             text="Server ip:",
@@ -41,29 +42,27 @@ class settingsWin(tk.Toplevel):
             background=backgroundColor,
             font=(defaultFont, 10)  
         ).pack()
-
         self.ipEntry = tk.Entry(self)
         self.ipEntry.pack(expand=True)
         self.ipEntry.insert(0, loadSettings(1))
-        self.keyLabel = ttk.Label(
+
+        self.passLabel = ttk.Label(
             self,
-            text="Encryption key:",
+            text="Key:",
             foreground=foregroundColor,
             background=backgroundColor,
             font=(defaultFont, 10)  
         ).pack()
+        self.passEntry = tk.Entry(self)
+        self.passEntry.pack(expand=True)
+        self.passEntry.insert(0, loadSettings(2))
 
-        self.keyEntry = tk.Entry(self)
-        self.keyEntry.pack(expand=True)
-        self.keyEntry.insert(0, loadSettings(2))
-        self.keyBut = tk.Button(self, text='Generate key', command=self.makeKey).pack(expand=True)
         self.exitBut = tk.Button(self, text='Save and Close', command=self.saveVars).pack(expand=True)
     def saveVars(self):
-        saveSettings(self.nameEntry.get(), self.ipEntry.get(), self.keyEntry.get())
+        saveSettings(self.nameEntry.get(), self.ipEntry.get(), self.passEntry.get())
         self.destroy()
-    def makeKey(self):
-        sKey = paCrypto.generateKey()
-        self.keyEntry.insert(0, sKey)
+
+
 
 
 
@@ -131,8 +130,7 @@ class window(tk.Tk):
         setWin.grab_set()
     def handleButtonPress(self,event=None):
         #When committing the chat in your form send to the function that handles contacting the server. The server should send it back
-        print("A")
-        sText = "@" + loadSettings(0) + ": " + self.entry.get()
+        sText = loadSettings(0) + ": " + self.entry.get()
         primarySend(sText, loadSettings(2))
         self.entry.delete(0, tk.END)
     def addToChatWindow(self, sChat = "..."):
@@ -168,16 +166,16 @@ def primaryRecieve():
 def closeConnection():
     client_socket.close()
 
-def saveSettings(sUserName, sServerIp, sEncKey):
+def saveSettings(sUserName, sServerIp, spassKey):
     global selfUser
     global serverIp
-    global encKey
+    global passKey
     selfUser = sUserName
     serverIp = sServerIp
-    encKey = sEncKey
+    passKey = spassKey
     #Then Save To Local File!
     with open('save.dat', 'wb') as f:
-        pickle.dump([selfUser, serverIp, encKey], f)
+        pickle.dump([selfUser, serverIp, passKey], f)
         f.close()
 
 def loadSettings(nwhichVar = 0):
@@ -187,7 +185,7 @@ def loadSettings(nwhichVar = 0):
     # = 2, encryption key
     with open('save.dat', 'rb') as f:
         #Load the data from the user file
-        selfUser, serverIp, encKey = pickle.load(f)
+        selfUser, serverIp, passKey = pickle.load(f)
         f.close()
     match nwhichVar:
         case 0:
@@ -195,17 +193,23 @@ def loadSettings(nwhichVar = 0):
         case 1:
             return serverIp
         case 2:
-            return encKey
+            return passKey
         case _:
             #If someone is a DUMBY DUMB DUMB and asks for something out of range then return the username and hope for the best
             return selfUser
 
 def primarySend(send_msg, key):
-    #Encrypt the message first
+    #Encrypt the message first, the variable should be a STRING until it's passed to the encryption function
+    print("=========================")
+    print("Sending data: " + send_msg)
+    print("=========================")
 
-    send_msg = paCrypto.encryptString(send_msg, key)
+    enc_msg = paCrypto.encryptString(send_msg, loadSettings(2)) #The message should be BYTES now
+    print("Data encrypted as: ")
+    print(enc_msg)
+    print("=========================")
     try:
-        client_socket.sendall(bytes(send_msg, 'utf-8'))
+        client_socket.sendall(enc_msg)
     except socket.error:
         app.addToChatWindow("System: Connection Error")
 
@@ -220,11 +224,13 @@ def messageListen(quitFlag):
     while quitFlag:
         ready = select.select([client_socket], [], [], 0) #check if message is ready
         if ready[0]: #if our ready flag is triggered then go ahead and recieve the thing
+            recv_msg = client_socket.recv(1024) #When the message is ready, go ahead and recieve, the message should be BYTES still
+            print("=========================")
             print("Recieved Message from server...")
-            recv_msg = client_socket.recv(1024) #When the message is ready, go ahead and recieve
-
-            recv_msg = paCrypto.decryptBytes(recv_msg, loadSettings(2))
-            app.addToChatWindow(str(recv_msg, 'utf-8'))
+            print(recv_msg)
+            print("=========================")
+            recv_msg = paCrypto.decryptBytes(recv_msg, loadSettings(2)) #Message should be a STRING again at this point
+            app.addToChatWindow(recv_msg)
         if quitFlag == False:
             break
     
@@ -234,9 +240,13 @@ if __name__ == "__main__":
     #Load the settings from the save file first thing
     selfUser = loadSettings(0)
     serverIp = loadSettings(1)
-    encKey = loadSettings(2)
+    passKey = loadSettings(2)
     connectSocket(serverIp)
     app.addToChatWindow("System: Connecting to server...")
+
+    recv_msg = client_socket.recv(1024)
+    app.addToChatWindow(str(recv_msg,'utf-8'))
+
     #Run the messageListen on repeat here please
     quitFlag = multiprocessing.Value('i', int(False))
     listenThread = threading.Thread(target=messageListen, args=(quitFlag,))
@@ -246,8 +256,7 @@ if __name__ == "__main__":
     listenThread.join()
     print("bingas")
 
-
-
-    
-
-    
+#TO-DO
+#Limit size of message, the encrtion crashes the client 
+# when you try to send messages larger than 600 characters, 
+# 200 characters should be plenty for most cases
