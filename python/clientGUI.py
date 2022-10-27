@@ -3,6 +3,10 @@ import tkinter.ttk as ttk
 from tkinter import font
 import select, socket, pickle, threading, multiprocessing, paCrypto
 
+#==============================
+#       Global Variables
+#==============================
+
 defaultFont = "Segoe UI Emoji"
 selfUser = "Me:"
 client_socket = socket.socket()
@@ -15,6 +19,62 @@ foregroundColor = '#dbdbce'
 serverIp = '127.0.0.1'
 passKey = '123abc'
 quitFlag = True
+
+#==============================
+#           Classes
+#==============================
+
+class loginWin(tk.Toplevel): #Login window, this is called before we attempt to connect to the server
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.geometry("600x300")
+        self.title('Mr.CryptoChat')
+        self.configure(background=backgroundColor)
+
+        #create subwidgets
+        self.nameLabel = ttk.Label(
+            self,
+            text='Mr.CryptoChat',
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 14)  
+        ).pack()
+
+        self.desLabel = ttk.Label(
+            self,
+            text='Please enter your server and credentials.',
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+
+        self.ipLabel = ttk.Label(
+            self,
+            text="Server ip:",
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+        self.ipEntry = tk.Entry(self)
+        self.ipEntry.pack(expand=True)
+        self.ipEntry.insert(0, loadSettings(1))
+
+        self.passLabel = ttk.Label(
+            self,
+            text="Password:",
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+        self.passEntry = tk.Entry(self,show='*')
+        self.passEntry.pack(expand=True)
+        self.passEntry.insert(0, loadSettings(2))
+
+        self.loginBut = tk.Button(self, text='Connect', command=self.loginMethod).pack(expand=True)
+    def loginMethod(self):
+        self.destroy()
+
+
 
 class settingsWin(tk.Toplevel):
     def __init__(self, parent):
@@ -53,7 +113,7 @@ class settingsWin(tk.Toplevel):
             background=backgroundColor,
             font=(defaultFont, 10)  
         ).pack()
-        self.passEntry = tk.Entry(self)
+        self.passEntry = tk.Entry(self,show='*')
         self.passEntry.pack(expand=True)
         self.passEntry.insert(0, loadSettings(2))
 
@@ -61,8 +121,6 @@ class settingsWin(tk.Toplevel):
     def saveVars(self):
         saveSettings(self.nameEntry.get(), self.ipEntry.get(), self.passEntry.get())
         self.destroy()
-
-
 
 
 
@@ -80,7 +138,7 @@ class window(tk.Tk):
         self.frameC = tk.Frame(background=backgroundColor)
 
         self.label = ttk.Label(
-            text="Mr.Cryptochat",
+            text="Mr.CryptoChat",
             foreground=foregroundColor,
             background=backgroundColor,
             font=(defaultFont, 16, font.BOLD),
@@ -139,6 +197,10 @@ class window(tk.Tk):
         self.chatTextBox.insert(tk.END, inMessage)
         self.chatTextBox.see(tk.END)
         self.chatTextBox.configure(state="disabled")
+
+#==============================
+#           Functions
+#============================== 
 
 def connectSocket(ip='127.0.0.1'):
     try:
@@ -217,6 +279,16 @@ def quitMe(bIn):
     global quitFlag
     quitFlag = bIn
 
+def tryLogin(app):
+    logWin = loginWin(app)
+    logWin.grab_set()
+
+
+
+#==============================
+#       Primary Execution
+#============================== 
+
 app = window()
 
 def messageListen(quitFlag):
@@ -233,14 +305,13 @@ def messageListen(quitFlag):
             app.addToChatWindow(recv_msg)
         if quitFlag == False:
             break
-    
-
 
 if __name__ == "__main__":
     #Load the settings from the save file first thing
     selfUser = loadSettings(0)
     serverIp = loadSettings(1)
     passKey = loadSettings(2)
+    tryLogin(app)
     connectSocket(serverIp)
     app.addToChatWindow("System: Connecting to server...")
 

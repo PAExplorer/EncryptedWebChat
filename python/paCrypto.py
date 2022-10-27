@@ -38,9 +38,11 @@ def decryptBytes(message = b'gAAAAABjVz5Xxm8l1ARWzPROFIcTNYgQWWighAhUCS0zNre2tjo
         message = bytes(message, 'utf-8')
     return str(fern.decrypt(message), 'utf-8')
 
-#Test Script
-#generateKey()
-#x = encryptString("ABCDEFGHIJKLMNOPQRSTUVWXYZ!?!@#$%^&*()asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
-
-#y = decryptBytes(x)
-#print(y)
+if __name__ == "__main__":
+    #Test Script
+    x = encryptString("ABCDEFGHIJKLMNOPQRSTUVWXYZ!?!@#$%^&*()asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
+    print("The encrypted data looks like this:")
+    print(x)
+    y = decryptBytes(x)
+    print("The unencrypted data looks like this:")
+    print(y)
