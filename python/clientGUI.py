@@ -205,8 +205,10 @@ class window(tk.Tk):
 def connectSocket(ip='127.0.0.1'):
     try:
         client_socket.connect((ip,port))
+        return True
     except socket.error:
         app.addToChatWindow("System: Error connecting to host server")
+        return False
 
     #client_socket.sendall(bytes("#" + loadSettings(0), 'utf-8'))
 
@@ -279,10 +281,22 @@ def quitMe(bIn):
     global quitFlag
     quitFlag = bIn
 
-def tryLogin(app):
+def tryLogin(app, ip):
     logWin = loginWin(app)
     logWin.grab_set()
-
+    
+    logIn = False
+    while logIn == False:
+        status = connectSocket(ip)
+        if status:
+            client_socket.sendall(bytes("#loginSession:" + loadSettings(2), 'utf-8'))
+            recv_msg = client_socket.recv(1024)
+            if recv_msg == b"confirmed": 
+                #Bypassing this won't give you credentials it just means the server accepted you.
+                logIn = True
+            else:
+                print("wrong password please try again")
+                #prompt the user to try a different password
 
 
 #==============================
@@ -311,8 +325,8 @@ if __name__ == "__main__":
     selfUser = loadSettings(0)
     serverIp = loadSettings(1)
     passKey = loadSettings(2)
-    tryLogin(app)
-    connectSocket(serverIp)
+    tryLogin(app, serverIp) #Blocking, confirms we have the correct password ;)
+    
     app.addToChatWindow("System: Connecting to server...")
 
     recv_msg = client_socket.recv(1024)
