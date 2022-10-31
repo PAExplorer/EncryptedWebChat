@@ -34,7 +34,7 @@ while True:
             if linSearch(socket_list, connect) != True:
                 print("New connection added...")
                 socket_list.append(connect)
-                BSAddr = bytes(str(addr), 'utf-8') #Funky thing to convert the ip address to a string then encode it to bytestring
+                BSAddr = bytes(str(addr), 'utf-8')
                 connect.sendall(b"You are connected from:" + BSAddr)
         else:
             try:
@@ -56,7 +56,7 @@ while True:
                 #    connect.sendall(sendName)
                 #    print("Connection response complete.")
                 #
-                #if strData.startswith("@"):
+                #else: for nextlin
                 for i in range(len(socket_list)):
                     if i != 0: #exclude the server itself
                         print("Sending to socket: " + str(i) + " : " + str(socket_list[i]))
