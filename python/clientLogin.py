@@ -15,12 +15,12 @@ if __name__ == "__main__":
     client_socket.connect((serverIp,port))
     recv_msg = client_socket.recv(1024)
     print(recv_msg)
-    messageToSend = bytes(input(), 'utf-8')
-    for i in range(0,10):
+    while True:
+        messageToSend = bytes(input(), 'utf-8')
         try:
             client_socket.sendall(messageToSend)
         except:
             print("error sending data")
-        print("Data Sent")
+        print("====================")
         recv_msg = client_socket.recv(1024)
         print(recv_msg)

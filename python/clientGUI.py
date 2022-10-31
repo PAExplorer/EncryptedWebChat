@@ -71,8 +71,11 @@ class loginWin(tk.Toplevel): #Login window, this is called before we attempt to 
         self.passEntry.insert(0, loadSettings(2))
 
         self.loginBut = tk.Button(self, text='Connect', command=self.loginMethod).pack(expand=True)
-    def loginMethod(self):
+        self.loginBut = tk.Button(self, text='Exit', command=self.exit).pack(expand=True)
+    def exit(self):
         self.destroy()
+    def loginMethod(self):
+        connectServer(self.passEntry.get())
 
 
 
@@ -284,19 +287,16 @@ def quitMe(bIn):
 def tryLogin(app, ip):
     logWin = loginWin(app)
     logWin.grab_set()
-    
-    logIn = False
-    while logIn == False:
-        status = connectSocket(ip)
-        if status:
-            client_socket.sendall(bytes("#loginSession:" + loadSettings(2), 'utf-8'))
-            recv_msg = client_socket.recv(1024)
-            if recv_msg == b"confirmed": 
-                #Bypassing this won't give you credentials it just means the server accepted you.
-                logIn = True
-            else:
-                print("wrong password please try again")
-                #prompt the user to try a different password
+
+def connectServer(credentials): #credentials is probably a string
+    messageToSend = bytes("#" + credentials, 'utf-8')
+    client_socket.sendall(messageToSend)
+    recv_msg = client_socket.recv(1024)
+    if recv_msg == b"confirmed":
+        return True
+    else:
+        return False
+
 
 
 #==============================
