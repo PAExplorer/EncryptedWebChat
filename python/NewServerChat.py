@@ -1,4 +1,5 @@
-import socket, select, threading
+import socket, select, threading, pickle, os
+from PASearches import *
 
 port = 9800
 CONFIRMMESSAGE = b"SERVER: Your credentials have been accepted"
@@ -15,19 +16,6 @@ server_socket.bind(('', port))
 #Server specific variables
 bsPassword = b"#123abc" #The password that tells the server to confirm that this socket should recieve the broadcasted messages.
 maxAttempts = 5
-
-#It may be useful to move these to their own script so that they may be improved upon seperately if you wish to do so
-def linSearch(list, product):
-    for i in range(len(list)):
-        if list[i] == product:
-            return True
-    return False
-
-def giveLinSearch(list, product):
-    for i in range(len(list)):
-        if list[i] == product:
-            return i
-    return -1
 
 def handleClient(conn, addr):
     print(f"New user {addr} attempting to connect.")
@@ -84,9 +72,26 @@ def sendToConnected(data):
 
 def addToBlacklist(ip): #Save this as a local file
     blacklist.append(ip)
+    with open('blacklist.dat', 'wb') as f:
+        pickle.dump(blacklist, f)
+        f.close()
+
+def loadBlacklist():
+    with open('blacklist.dat', 'rb') as f:
+        #Load the data from the user file
+        blacklist = pickle.load(f)
+        f.close()
+    return blacklist
 
 def addToSockets(sock):
     socketList.append(sock)
 
 print("Server starting...")
+
+if os.path.exists('blacklist.dat'):
+    blacklist = loadBlacklist()
+    print("Blacklist successfully loaded...")
+else:
+    print("No blacklist found, assuming empty list.")
+
 start()
