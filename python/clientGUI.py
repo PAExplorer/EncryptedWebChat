@@ -18,6 +18,7 @@ backgroundColor = '#2e2e2e'
 foregroundColor = '#dbdbce'
 serverIp = '127.0.0.1'
 passKey = '123abc'
+CONFIRMMESSAGE = b"SERVER: Your credentials have been accepted"
 quitFlag = True
 
 #==============================
@@ -68,14 +69,39 @@ class loginWin(tk.Toplevel): #Login window, this is called before we attempt to 
         ).pack()
         self.passEntry = tk.Entry(self,show='*')
         self.passEntry.pack(expand=True)
-        self.passEntry.insert(0, loadSettings(2))
+
+        self.uNameLabel = ttk.Label(
+            self,
+            text="Username:",
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+        self.uNameEntry = tk.Entry(self)
+        self.uNameEntry.pack(expand=True)
+        self.uNameEntry.insert(0, loadSettings(0))
+
+        self.keyLabel = ttk.Label(
+            self,
+            text="Encryption Key:",
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+        self.keyEntry = tk.Entry(self,show='*')
+        self.keyEntry.pack(expand=True)
+        self.keyEntry.insert(0, loadSettings(2))
 
         self.loginBut = tk.Button(self, text='Connect', command=self.loginMethod).pack(expand=True)
         self.loginBut = tk.Button(self, text='Exit', command=self.exit).pack(expand=True)
     def exit(self):
         self.destroy()
     def loginMethod(self):
-        connectServer(self.passEntry.get())
+        x = connectServer(self.passEntry.get(), self.ipEntry.get())
+        if x == True:
+            saveSettings(self.uNameEntry.get(), self.ipEntry.get(), self.keyEntry.get())
+            primarySend(loadSettings(0) + " connected", loadSettings(2))
+            self.exit()
 
 
 
@@ -233,7 +259,7 @@ def primaryRecieve():
 def closeConnection():
     client_socket.close()
 
-def saveSettings(sUserName, sServerIp, spassKey):
+def saveSettings(sUserName = selfUser, sServerIp = serverIp, spassKey = passKey):
     global selfUser
     global serverIp
     global passKey
@@ -286,15 +312,24 @@ def quitMe(bIn):
 
 def tryLogin(app, ip):
     logWin = loginWin(app)
+    logWin.attributes('-topmost',1)
     logWin.grab_set()
 
-def connectServer(credentials): #credentials is probably a string
+def connectServer(credentials, IP): #This is what is called when you press the "Connect" button.
+    connectSocket(IP)
     messageToSend = bytes("#" + credentials, 'utf-8')
     client_socket.sendall(messageToSend)
     recv_msg = client_socket.recv(1024)
-    if recv_msg == b"confirmed":
+    print("=========================")
+    print("Got data back:" + str(recv_msg, 'utf-8'))
+    print("=========================")
+    if recv_msg == CONFIRMMESSAGE:
+        print("Recieved good password confirmation from server")
+        app.addToChatWindow(f"You are connected to {IP}.")
+        listenThread.start()
         return True
     else:
+        print("Recieved bad password confirmation from server")
         return False
 
 
@@ -320,30 +355,29 @@ def messageListen(quitFlag):
         if quitFlag == False:
             break
 
+def startMain():
+    listenThread.start()
+
+
 if __name__ == "__main__":
     #Load the settings from the save file first thing
     selfUser = loadSettings(0)
     serverIp = loadSettings(1)
     passKey = loadSettings(2)
-    tryLogin(app, serverIp) #Blocking, confirms we have the correct password ;)
-    
-    app.addToChatWindow("System: Connecting to server...")
-
-    recv_msg = client_socket.recv(1024)
-    app.addToChatWindow(str(recv_msg,'utf-8'))
+    tryLogin(app, serverIp) #Creates the login window
+    #app.addToChatWindow("System: Connecting to server...")
+    #recv_msg = client_socket.recv(1024)
+    #app.addToChatWindow(str(recv_msg,'utf-8'))
 
     #Run the messageListen on repeat here please
     quitFlag = multiprocessing.Value('i', int(False))
     listenThread = threading.Thread(target=messageListen, args=(quitFlag,))
-    listenThread.start()
     app.mainloop()
     quitMe(False)
     listenThread.join()
-    print("bingas")
+    print("Exiting program...")
 
 #TO-DO
-#Limit size of message, the encrtion crashes the client 
+#Limit size of message, the encryption crashes the client 
 # when you try to send messages larger than 600 characters, 
 # 200 characters should be plenty for most cases
-#
-#Add a screen for sending credentials to the server

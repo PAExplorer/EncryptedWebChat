@@ -21,7 +21,11 @@ def encryptString(message= "Test message", password = "12356"):
     fern = Fernet(key)
     if type(message) == type("string"):
         message = bytes(message, 'utf-8')
-    return fern.encrypt(message)
+    try:
+        bMessage = fern.encrypt(message)
+        return bMessage
+    except:
+        return b"Encryption Error"
 
 def decryptBytes(message = b'gAAAAABjVz5Xxm8l1ARWzPROFIcTNYgQWWighAhUCS0zNre2tjo7iysjupDpteHq9kXGyHV0o-BV6Rg456746ENlD-qDerWO3w==', password = "12356"):
     if type(password) == type("string"):
@@ -36,7 +40,11 @@ def decryptBytes(message = b'gAAAAABjVz5Xxm8l1ARWzPROFIcTNYgQWWighAhUCS0zNre2tjo
     fern = Fernet(key)
     if type(message) == type("string"):
         message = bytes(message, 'utf-8')
-    return str(fern.decrypt(message), 'utf-8')
+    try:
+        msgReturn = str(fern.decrypt(message), 'utf-8')
+        return msgReturn
+    except:
+        return "Decryption error"
 
 if __name__ == "__main__":
     #Test Script
