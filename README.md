@@ -5,12 +5,13 @@ Check the Python file for the scripts.
 
 "ClientChat.py" is the primary script you should use for the client side.
 
-"ServerChat.py" is the primary script you should use on your server. 
-You will need to edit line 17 to a byte string of your choosing aka: 
-b"sdnf290h34"
-or similar.
+"ServerChat.py" is the primary script you should use on your server.
 
 "makeBlacklist.py" is an interactive way to manage the blacklist.
+
+"makeNetSet.py" allows you to set the port used
+
+"makeServerPassword.py" allows you to set the server password.
 
 The save.dat file saves your information for convenience, it is not encrypted.
 
