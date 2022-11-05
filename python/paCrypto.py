@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-salt = b'\xe8\x19\x11 .k\xde\xce\xd0\xb5B\x9c\xa5\xa8\xb7\x07' #This should probably be unique, but whatever.
+salt = b'\xe8\x19\x11 .k\xde\xce\xd0\xb5B\x9c\xa5\xa8\xb7\x07' #This should probably be unique, Feel free to change it on both your clients and servers if you feel the need.
 
 def encryptString(message= "Test message", password = "12356"):
     if type(password) == type("string"):

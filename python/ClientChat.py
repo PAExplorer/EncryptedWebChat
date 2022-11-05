@@ -1,6 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import font
+from makeNetSet import *
 import select, socket, pickle, threading, multiprocessing, paCrypto
 
 #==============================
@@ -11,7 +12,9 @@ defaultFont = "Segoe UI Emoji"
 selfUser = "Me:"
 client_socket = socket.socket()
 port = 9800
+port = returnSettFile()
 timeout_time = 10 #timeout in seconds
+reconnectionAttempts = 10
 
 #client_socket.setblocking(0)
 backgroundColor = '#2e2e2e'
@@ -60,6 +63,17 @@ class loginWin(tk.Toplevel): #Login window, this is called before we attempt to 
         self.ipEntry.pack(expand=True)
         self.ipEntry.insert(0, loadSettings(1))
 
+        self.portLabel = ttk.Label(
+            self,
+            text="Server ip:",
+            foreground=foregroundColor,
+            background=backgroundColor,
+            font=(defaultFont, 10)  
+        ).pack()
+        self.portEntry = tk.Entry(self)
+        self.portEntry.pack(expand=True)
+        self.portEntry.insert(0, port)
+
         self.passLabel = ttk.Label(
             self,
             text="Password:",
@@ -97,6 +111,7 @@ class loginWin(tk.Toplevel): #Login window, this is called before we attempt to 
     def exit(self):
         self.destroy()
     def loginMethod(self):
+        silentWriteSettFile(self.portEntry.get())
         x = connectServer(self.passEntry.get(), self.ipEntry.get())
         if x == True:
             saveSettings(self.uNameEntry.get(), self.ipEntry.get(), self.keyEntry.get())
@@ -293,14 +308,14 @@ def loadSettings(nwhichVar = 0):
 
 def primarySend(send_msg, key):
     #Encrypt the message first, the variable should be a STRING until it's passed to the encryption function
-    print("=========================")
-    print("Sending data: " + send_msg)
-    print("=========================")
+    #print("=========================")
+    #print("Sending data: " + send_msg)
+    #print("=========================")
 
     enc_msg = paCrypto.encryptString(send_msg, loadSettings(2)) #The message should be BYTES now
-    print("Data encrypted as: ")
-    print(enc_msg)
-    print("=========================")
+    #print("Data encrypted as: ")
+    #print(enc_msg)
+    #print("=========================")
     try:
         client_socket.sendall(enc_msg)
     except socket.error:
@@ -318,19 +333,29 @@ def tryLogin(app, ip):
 def connectServer(credentials, IP): #This is what is called when you press the "Connect" button.
     connectSocket(IP)
     messageToSend = bytes("#" + credentials, 'utf-8')
-    client_socket.sendall(messageToSend)
-    recv_msg = client_socket.recv(1024)
-    print("=========================")
-    print("Got data back:" + str(recv_msg, 'utf-8'))
-    print("=========================")
+    try:
+        client_socket.sendall(messageToSend)
+    except:
+        app.addToChatWindow("System: Error sending credentials.")
+        return False
+    try:
+        recv_msg = client_socket.recv(1024)
+    except:
+        app.addToChatWindow("System: A connection error occured while logging in.")
+        return False
+    #print("=========================")
+    #print("Got data back:" + str(recv_msg, 'utf-8'))
+    #print("=========================")
     if recv_msg == CONFIRMMESSAGE:
-        print("Recieved good password confirmation from server")
+        #print("Recieved good password confirmation from server")
         app.addToChatWindow(f"You are connected to {IP}.")
         listenThread.start()
         return True
-    else:
-        print("Recieved bad password confirmation from server")
+    elif recv_msg == b"Wrong password":
+        #print("Recieved wrong password confirmation from server")
         return False
+    else:
+        exit()
 
 
 
@@ -342,40 +367,80 @@ app = window()
 
 def messageListen(quitFlag):
     #Repeatedly listen to the server
+    x = 0
+    i = 0
     while quitFlag:
         ready = select.select([client_socket], [], [], 0) #check if message is ready
+        i += 1
+        #print(i) test to see if select.select is blocking, it is NOT
+        
         if ready[0]: #if our ready flag is triggered then go ahead and recieve the thing
-            recv_msg = client_socket.recv(1024) #When the message is ready, go ahead and recieve, the message should be BYTES still
-            print("=========================")
-            print("Recieved Message from server...")
-            print(recv_msg)
-            print("=========================")
-            recv_msg = paCrypto.decryptBytes(recv_msg, loadSettings(2)) #Message should be a STRING again at this point
-            app.addToChatWindow(recv_msg)
-        if quitFlag == False:
+            try:
+                recv_msg = client_socket.recv(1024) #When the message is ready, go ahead and recieve, the message should be BYTES still
+                #print("=========================")
+                #print("Recieved Message from server...")
+                #print(recv_msg)
+                #print("=========================")
+                recv_msg = paCrypto.decryptBytes(recv_msg, loadSettings(2)) #Message should be a STRING again at this point
+                app.addToChatWindow(recv_msg)
+            except:
+                app.addToChatWindow(f"System: A connection error has occured. This has occured {x} out of {reconnectionAttempts} times.")
+                x += 1
+        if i > 10000:
+            #After ten thousand cycles check if we're still live
+            i = 0
+            killMe = isKillHere()
+            if killMe == True:
+                quitFlag = False
+        if quitFlag == False or x > reconnectionAttempts:
             break
 
 def startMain():
     listenThread.start()
 
+def cleanKillFile():
+    if os.path.exists('kill.kill'):
+        os.remove('kill.kill')
+        return True
+    else:
+        return False
+
+def makeKillFile():
+    killMe = True
+    with open('kill.kill', 'wb') as f:
+        pickle.dump(killMe, f)
+        f.close()  
+
+def isKillHere():
+    if os.path.exists('kill.kill'):
+        return True
+    else:
+        return False
 
 if __name__ == "__main__":
     #Load the settings from the save file first thing
     selfUser = loadSettings(0)
     serverIp = loadSettings(1)
     passKey = loadSettings(2)
-    tryLogin(app, serverIp) #Creates the login window
-    #app.addToChatWindow("System: Connecting to server...")
-    #recv_msg = client_socket.recv(1024)
-    #app.addToChatWindow(str(recv_msg,'utf-8'))
+
+    #remove the "kill file" that tells our other threads to delete themselves
+    cleanKillFile()
+
+    #Creates the login window
+    tryLogin(app, serverIp) 
+
+
 
     #Run the messageListen on repeat here please
     quitFlag = multiprocessing.Value('i', int(False))
     listenThread = threading.Thread(target=messageListen, args=(quitFlag,))
     app.mainloop()
+
+    #if the mainloop is closed make the file to inform the other thread to close
+    makeKillFile()
+
     quitMe(False)
-    listenThread.join()
-    print("Exiting program...")
+    #print("Exiting program...")
 
 #TO-DO
 #Limit size of message, the encryption crashes the client 

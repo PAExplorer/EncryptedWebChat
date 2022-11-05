@@ -1,7 +1,11 @@
 import socket, select, threading, pickle, os
 from PASearches import *
+from makeNetSet import *
+from makeServerPassword import *
 
 port = 9800
+port = returnSettFile()
+
 CONFIRMMESSAGE = b"SERVER: Your credentials have been accepted"
 global socketList
 global blacklist
@@ -13,8 +17,6 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server_socket.bind(('', port))
 
-#Server specific variables
-bsPassword = b"#123abc" #The password that tells the server to confirm that this socket should recieve the broadcasted messages.
 maxAttempts = 5
 
 def handleClient(conn, addr):
@@ -26,45 +28,53 @@ def handleClient(conn, addr):
     while connected:
         ready = select.select([conn], [], [], 0)
         if ready:
-            message = conn.recv(1024)
-            print("Recieved data: " + str(message, 'utf-8'))
-            if message and credentials == True:
-                #Connected and has good password handle messages here
-                sendToConnected(message)
-            elif message and credentials == False:
-                #Connected but awaiting correct password
-                if message.startswith(b"#") and message == bsPassword:
-                    credentials = True
-                    #add this socket to the users who will recieve messages
-                    addToSockets(conn)
-                    conn.send(CONFIRMMESSAGE) #ABC
-                elif message.startswith(b"#") and message != bsPassword:
-                    attempts -= 1
-                    print(f"SERVER: Incorrect password, user has {attempts} attempts left.")
-                else:
-                    attempts -= 1
-                    print(f"SERVER: Bad format password or other error, user has {attempts} attempts left.")
-                if attempts <= 0:
-                    connected = False
-                    print(f"SERVER: User with ip address {addr[0]} has failed too many password attempts and will be blacklisted.")
-                    addToBlacklist(addr[0])
+            try:
+                message = conn.recv(1024)
+                if message:
+                    print(f"Recieved data from {addr}")
+                    if message and credentials == True:
+                        #Connected and has good password handle messages here
+                        sendToConnected(message)
+                    elif message and credentials == False:
+                        #Connected but awaiting correct password
+                        if message.startswith(b"#") and checkPass(message[1:]) == True:
+                            credentials = True
+                            #add this socket to the users who will recieve messages
+                            addToSockets(conn)
+                            conn.send(CONFIRMMESSAGE) #ABC
+                        elif message.startswith(b"#") and checkPass(message[1:]) == False:
+                            attempts -= 1
+                            print(f"SERVER: Incorrect password, user has {attempts} attempts left.")
+                            conn.send(b"Wrong password")
+                        else:
+                            attempts -= 1
+                            print(f"SERVER: Bad format password or other error, user has {attempts} attempts left.")
+                            conn.send(b"Wrong password")
+                        if attempts <= 0:
+                            connected = False
+                            print(f"SERVER: User with ip address {addr[0]} has failed too many password attempts and will be blacklisted.")
+                            addToBlacklist(addr[0])
+            except ConnectionResetError:
+                print("Error listening to client")
+                connected = False
     conn.close()
 
 def start():
     server_socket.listen()
-    print(f"[LISTENING] Server is listening")
+    print(f"[SYSTEM] Server is configured using port {port}")
+    print(f"[SYSTEM] Server is listening...")
     while True:
         conn, addr = server_socket.accept()
         print(addr)
         if linSearch(blacklist, addr[0]) != True:
             thread = threading.Thread(target=handleClient, args=(conn, addr))
             thread.start()
-            print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+            print(f"[SYSTEM] Active connections: {threading.active_count() - 1}")
 
 def sendToConnected(data):
     for i in range(len(socketList)):
         #if i != 0: #exclude the server itself
-        print("Sending to socket: " + str(i) + " : " + str(socketList[i]))
+        #print("Sending to socket: " + str(i) + " : " + str(socketList[i]))
         try:
             socketList[i].sendall(data) #This needs a way to time out
         except:
