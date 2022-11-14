@@ -332,6 +332,7 @@ def tryLogin(app, ip):
 
 def connectServer(credentials, IP): #This is what is called when you press the "Connect" button.
     connectSocket(IP)
+    print(IP)
     messageToSend = bytes("#" + credentials, 'utf-8')
     try:
         client_socket.sendall(messageToSend)
